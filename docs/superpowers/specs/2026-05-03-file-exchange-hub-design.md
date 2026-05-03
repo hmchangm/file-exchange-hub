@@ -62,13 +62,16 @@ External Client
 |---|---|---|
 | `id` | UUID (PK) | generated on registration |
 | `bucket` | VARCHAR(255) | MinIO bucket name |
-| `object_key` | VARCHAR(1024) | full path in bucket |
+| `report_id` | VARCHAR(255) | report identifier |
+| `report_category` | VARCHAR(255) | report category |
+| `object_key` | VARCHAR(2000) | full path in bucket |
 | `filename` | VARCHAR(255) | original filename |
 | `content_type` | VARCHAR(128) | e.g. `application/pdf` |
 | `file_size` | BIGINT | bytes |
 | `uploader_id` | VARCHAR(255) | client-supplied identifier |
 | `tags` | JSON | optional key-value labels |
 | `status` | ENUM(`REGISTERED`, `FAILED`) | set after MinIO verification |
+| `remark` | VARCHAR(1024) | add remark for failed or error |
 | `registered_at` | TIMESTAMP | server-set on creation |
 
 Index on `(registered_at, bucket, status)` for missing-file queries.
@@ -97,6 +100,8 @@ Request body:
 ```json
 {
   "bucket": "incoming",
+  "reportId": "WXG",
+  "reportCategory": "AVI",
   "objectKey": "reports/2026/may/report.pdf",
   "filename": "report.pdf",
   "contentType": "application/pdf",
@@ -171,6 +176,8 @@ Payload:
 {
   "id": "uuid",
   "bucket": "incoming",
+  "reportId": "WXG",
+  "reportCategory": "AVI",
   "objectKey": "reports/2026/may/report.pdf",
   "filename": "report.pdf",
   "contentType": "application/pdf",
