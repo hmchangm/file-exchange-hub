@@ -43,7 +43,7 @@
     <!-- Quarkus core -->
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-kotlin</artifactId></dependency>
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc</artifactId></dependency>
-    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-resteasy-reactive-kotlin-serialization</artifactId></dependency>
+    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-rest-kotlin-serialization</artifactId></dependency>
     <!-- DB -->
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-hibernate-orm-panache-kotlin</artifactId></dependency>
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-jdbc-mariadb</artifactId></dependency>
@@ -56,9 +56,9 @@
     </dependency>
     <!-- NATS JetStream -->
     <dependency>
-      <groupId>io.quarkiverse.nats-jetstream</groupId>
+      <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
       <artifactId>quarkus-messaging-nats-jetstream</artifactId>
-      <version>3.9.0</version>
+      <version>3.19.0</version>
     </dependency>
     <!-- Health -->
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-health</artifactId></dependency>
