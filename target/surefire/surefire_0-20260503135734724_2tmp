@@ -1,0 +1,9 @@
+#surefire_0
+#Sun May 03 13:57:34 CST 2026
+basedir=/home/iron/projects/file-exchange-hub
+failsafe.useFile=false
+java.util.logging.manager=org.jboss.logmanager.LogManager
+localRepository=/home/iron/.m2/repository
+maven.home=/home/iron/.m2/wrapper/dists/apache-maven-3.8.6-bin/67568434/apache-maven-3.8.6
+native.image.path=/home/iron/projects/file-exchange-hub/target/file-exchange-hub-1.0.0-SNAPSHOT-runner
+skipITs=false

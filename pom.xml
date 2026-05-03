@@ -54,6 +54,11 @@
       <artifactId>quarkus-amazon-s3</artifactId>
       <version>3.3.3</version>
     </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>url-connection-client</artifactId>
+      <version>2.30.36</version>
+    </dependency>
     <!-- NATS JetStream -->
     <dependency>
       <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
