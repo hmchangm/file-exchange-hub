@@ -16,6 +16,8 @@ class MariaDbTestResource : QuarkusTestResourceLifecycleManager {
             "quarkus.datasource.jdbc.url" to container.jdbcUrl,
             "quarkus.datasource.username" to container.username,
             "quarkus.datasource.password" to container.password,
+            "quarkus.datasource.reactive.url" to
+                "mysql://${container.host}:${container.getMappedPort(3306)}/filehub"
         )
     }
 
