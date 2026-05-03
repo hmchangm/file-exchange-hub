@@ -1,28 +1,12 @@
 package tw.brandy.ironman.hub.domain
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
-import jakarta.persistence.*
 import java.time.Instant
 import java.util.UUID
 
-@Entity
-@Table(
-    name = "file_delivery",
-    uniqueConstraints = [UniqueConstraint(columnNames = ["file_id", "consumer_id"])]
+data class FileDelivery(
+    val id: String = UUID.randomUUID().toString(),
+    val fileId: String,
+    val consumerId: String,
+    val note: String? = null,
+    val processedAt: Instant = Instant.now()
 )
-class FileDelivery : PanacheEntityBase {
-    @Id
-    var id: String = UUID.randomUUID().toString()
-
-    @Column(name = "file_id", nullable = false)
-    var fileId: String = ""
-
-    @Column(name = "consumer_id", nullable = false)
-    var consumerId: String = ""
-
-    @Column(columnDefinition = "TEXT")
-    var note: String? = null
-
-    @Column(name = "processed_at", nullable = false)
-    var processedAt: Instant = Instant.now()
-}
