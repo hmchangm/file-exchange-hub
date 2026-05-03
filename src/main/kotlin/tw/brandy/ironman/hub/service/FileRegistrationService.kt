@@ -1,8 +1,9 @@
 package tw.brandy.ironman.hub.service
 
-import io.smallrye.mutiny.Uni
-import io.smallrye.mutiny.infrastructure.Infrastructure
 import jakarta.enterprise.context.ApplicationScoped
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import tw.brandy.ironman.hub.domain.FileMetadata
@@ -21,39 +22,43 @@ class FileRegistrationService(
     private val repository: FileMetadataStore,
     private val publisher: FileRegistrationEventPublisher
 ) {
-    fun register(request: RegisterFileRequest): Uni<RegisterFileResponse> =
-        Uni.createFrom().item { verifier.exists(request.bucket, request.objectKey) }
-            .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
-            .flatMap { exists ->
-                if (!exists) {
-                    Uni.createFrom().failure(
-                        ObjectNotFoundException("Object not found in MinIO: ${request.bucket}/${request.objectKey}")
-                    )
-                } else {
-                    val metadata = FileMetadata(
-                        bucket = request.bucket,
-                        reportId = request.reportId,
-                        reportCategory = request.reportCategory,
-                        objectKey = request.objectKey,
-                        filename = request.filename,
-                        contentType = request.contentType,
-                        fileSize = request.fileSize,
-                        checksum = request.checksum,
-                        uploaderId = request.uploaderId,
-                        tags = request.tags?.let { Json.encodeToString(it) },
-                        status = FileStatus.REGISTERED,
-                        registeredAt = Instant.now()
-                    )
-                    repository.insert(metadata).map {
-                        val event = FileRegisteredEvent.from(metadata, request.tags)
-                        val published = publisher.publish(event)
-                        RegisterFileResponse(
-                            id = metadata.id,
-                            status = metadata.status.name,
-                            eventPublished = published,
-                            registeredAt = metadata.registeredAt.toString()
-                        )
-                    }
-                }
-            }
+    suspend fun register(request: RegisterFileRequest): RegisterFileResponse {
+        val exists = withContext(Dispatchers.IO) {
+            verifier.exists(request.bucket, request.objectKey)
+        }
+        if (!exists) {
+            throw ObjectNotFoundException("Object not found in MinIO: ${request.bucket}/${request.objectKey}")
+        }
+
+        val metadata = FileMetadata(
+            bucket = request.bucket,
+            reportId = request.reportId,
+            reportCategory = request.reportCategory,
+            objectKey = request.objectKey,
+            filename = request.filename,
+            contentType = request.contentType,
+            fileSize = request.fileSize,
+            checksum = request.checksum,
+            uploaderId = request.uploaderId,
+            tags = request.tags?.let { Json.encodeToString(it) },
+            status = FileStatus.REGISTERED,
+            registeredAt = Instant.now()
+        )
+        repository.insert(metadata)
+
+        val event = FileRegisteredEvent.from(metadata, request.tags)
+        val published = withTimeoutOrNull(EVENT_PUBLISH_TIMEOUT_MS) {
+            publisher.publish(event)
+        } ?: false
+        return RegisterFileResponse(
+            id = metadata.id,
+            status = metadata.status.name,
+            eventPublished = published,
+            registeredAt = metadata.registeredAt.toString()
+        )
+    }
+
+    private companion object {
+        const val EVENT_PUBLISH_TIMEOUT_MS = 2_000L
+    }
 }

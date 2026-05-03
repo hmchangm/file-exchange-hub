@@ -1,6 +1,6 @@
 package tw.brandy.ironman.hub.service
 
-import io.smallrye.mutiny.Uni
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import tw.brandy.ironman.hub.domain.FileMetadata
@@ -29,39 +29,39 @@ class FileRegistrationServiceTest {
     )
 
     @Test
-    fun `returns success with eventPublished true when all steps succeed`() {
+    fun `returns success with eventPublished true when all steps succeed`() = runBlocking {
         verifier.objectExists = true
         publisher.publishResult = true
-        val result = service.register(validRequest).await().indefinitely()
+        val result = service.register(validRequest)
         assertTrue(result.eventPublished)
         assertEquals("REGISTERED", result.status)
         assertEquals(1, repository.insertCount)
     }
 
     @Test
-    fun `returns eventPublished false when NATS publish fails`() {
+    fun `returns eventPublished false when NATS publish fails`() = runBlocking {
         verifier.objectExists = true
         publisher.publishResult = false
-        val result = service.register(validRequest).await().indefinitely()
+        val result = service.register(validRequest)
         assertFalse(result.eventPublished)
         assertEquals("REGISTERED", result.status)
     }
 
     @Test
-    fun `throws ObjectNotFoundException when file not found in MinIO`() {
+    fun `throws ObjectNotFoundException when file not found in MinIO`() = runBlocking {
         verifier.objectExists = false
         assertThrows(ObjectNotFoundException::class.java) {
-            service.register(validRequest).await().indefinitely()
+            runBlocking { service.register(validRequest) }
         }
         assertEquals(0, repository.insertCount)
     }
 
     @Test
-    fun `registers successfully when checksum is null (bypass)`() {
+    fun `registers successfully when checksum is null (bypass)`() = runBlocking {
         val req = validRequest.copy(checksum = null)
         verifier.objectExists = true
         publisher.publishResult = true
-        val result = service.register(req).await().indefinitely()
+        val result = service.register(req)
         assertEquals("REGISTERED", result.status)
     }
 
@@ -74,10 +74,9 @@ class FileRegistrationServiceTest {
         var insertCount = 0
         var inserted: FileMetadata? = null
 
-        override fun insert(metadata: FileMetadata): Uni<Unit> {
+        override suspend fun insert(metadata: FileMetadata) {
             insertCount += 1
             inserted = metadata
-            return Uni.createFrom().item(Unit)
         }
     }
 
@@ -85,7 +84,7 @@ class FileRegistrationServiceTest {
         var publishResult = true
         var published: FileRegisteredEvent? = null
 
-        override fun publish(event: FileRegisteredEvent): Boolean {
+        override suspend fun publish(event: FileRegisteredEvent): Boolean {
             published = event
             return publishResult
         }

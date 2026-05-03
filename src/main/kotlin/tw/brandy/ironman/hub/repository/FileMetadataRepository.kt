@@ -1,6 +1,6 @@
 package tw.brandy.ironman.hub.repository
 
-import io.smallrye.mutiny.Uni
+import io.smallrye.mutiny.coroutines.awaitSuspending
 import io.vertx.mutiny.mysqlclient.MySQLPool
 import io.vertx.mutiny.sqlclient.Row
 import io.vertx.mutiny.sqlclient.Tuple
@@ -11,18 +11,19 @@ import java.time.Instant
 import java.time.ZoneOffset
 
 interface FileMetadataStore {
-    fun insert(metadata: FileMetadata): Uni<Unit>
+    suspend fun insert(metadata: FileMetadata)
 }
 
 @ApplicationScoped
 class FileMetadataRepository(private val pool: MySQLPool) : FileMetadataStore {
 
-    fun findById(id: String): Uni<FileMetadata?> =
+    suspend fun findById(id: String): FileMetadata? =
         pool.preparedQuery("SELECT * FROM file_metadata WHERE id = ?")
             .execute(Tuple.of(id))
             .map { rows -> rows.firstOrNull()?.toFileMetadata() }
+            .awaitSuspending()
 
-    override fun insert(metadata: FileMetadata): Uni<Unit> =
+    override suspend fun insert(metadata: FileMetadata) {
         pool.preparedQuery("""
             INSERT INTO file_metadata (id, bucket, report_id, report_category, object_key,
                 filename, content_type, file_size, checksum, uploader_id, tags,
@@ -37,26 +38,28 @@ class FileMetadataRepository(private val pool: MySQLPool) : FileMetadataStore {
                 metadata.registeredAt.atOffset(ZoneOffset.UTC).toLocalDateTime()
             )))
             .map { Unit }
+            .awaitSuspending()
+    }
 
-    fun search(uploaderId: String?, bucket: String?, page: Int, size: Int): Uni<Pair<List<FileMetadata>, Long>> {
+    suspend fun search(uploaderId: String?, bucket: String?, page: Int, size: Int): Pair<List<FileMetadata>, Long> {
         val conditions = mutableListOf("status = ?")
         val params = mutableListOf<Any?>(FileStatus.REGISTERED.name)
         if (uploaderId != null) { conditions += "uploader_id = ?"; params += uploaderId }
         if (bucket != null) { conditions += "bucket = ?"; params += bucket }
         val where = conditions.joinToString(" AND ")
         val offset = page * size
-        return pool.preparedQuery("SELECT COUNT(*) FROM file_metadata WHERE $where")
+        val countRows = pool.preparedQuery("SELECT COUNT(*) FROM file_metadata WHERE $where")
             .execute(Tuple.from(params))
-            .flatMap { countRows ->
-                val total = countRows.first().getLong(0) ?: 0L
-                pool.preparedQuery(
-                    "SELECT * FROM file_metadata WHERE $where ORDER BY registered_at DESC LIMIT ? OFFSET ?"
-                ).execute(Tuple.from(params + listOf(size, offset)))
-                    .map { rows -> rows.map { it.toFileMetadata() } to total }
-            }
+            .awaitSuspending()
+        val total = countRows.first().getLong(0) ?: 0L
+        val rows = pool.preparedQuery(
+            "SELECT * FROM file_metadata WHERE $where ORDER BY registered_at DESC LIMIT ? OFFSET ?"
+        ).execute(Tuple.from(params + listOf(size, offset)))
+            .awaitSuspending()
+        return rows.map { it.toFileMetadata() } to total
     }
 
-    fun findMissing(consumerId: String, bucket: String?, since: Instant, page: Int, size: Int): Uni<Pair<List<FileMetadata>, Long>> {
+    suspend fun findMissing(consumerId: String, bucket: String?, since: Instant, page: Int, size: Int): Pair<List<FileMetadata>, Long> {
         val bucketClause = if (bucket != null) "AND fm.bucket = ? " else ""
         val params = mutableListOf<Any?>(
             FileStatus.REGISTERED.name,
@@ -75,14 +78,14 @@ class FileMetadataRepository(private val pool: MySQLPool) : FileMetadataStore {
             $bucketClause
         """.trimIndent()
         val offset = page * size
-        return pool.preparedQuery("SELECT COUNT(*) $baseSql")
+        val countRows = pool.preparedQuery("SELECT COUNT(*) $baseSql")
             .execute(Tuple.from(params))
-            .flatMap { countRows ->
-                val total = countRows.first().getLong(0) ?: 0L
-                pool.preparedQuery("SELECT fm.* $baseSql ORDER BY fm.registered_at LIMIT ? OFFSET ?")
-                    .execute(Tuple.from(params + listOf(size, offset)))
-                    .map { rows -> rows.map { it.toFileMetadata() } to total }
-            }
+            .awaitSuspending()
+        val total = countRows.first().getLong(0) ?: 0L
+        val rows = pool.preparedQuery("SELECT fm.* $baseSql ORDER BY fm.registered_at LIMIT ? OFFSET ?")
+            .execute(Tuple.from(params + listOf(size, offset)))
+            .awaitSuspending()
+        return rows.map { it.toFileMetadata() } to total
     }
 
     private fun Row.toFileMetadata(): FileMetadata = FileMetadata(

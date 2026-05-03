@@ -1,5 +1,6 @@
 package tw.brandy.ironman.hub.service
 
+import io.smallrye.mutiny.coroutines.awaitSuspending
 import io.smallrye.reactive.messaging.MutinyEmitter
 import jakarta.enterprise.context.ApplicationScoped
 import kotlinx.serialization.encodeToString
@@ -8,15 +9,15 @@ import org.eclipse.microprofile.reactive.messaging.Channel
 import tw.brandy.ironman.hub.domain.FileRegisteredEvent
 
 interface FileRegistrationEventPublisher {
-    fun publish(event: FileRegisteredEvent): Boolean
+    suspend fun publish(event: FileRegisteredEvent): Boolean
 }
 
 @ApplicationScoped
 class FileEventPublisher(
     @Channel("files-registered") private val emitter: MutinyEmitter<String>
 ) : FileRegistrationEventPublisher {
-    override fun publish(event: FileRegisteredEvent): Boolean = try {
-        emitter.sendAndAwait(Json.encodeToString(event))
+    override suspend fun publish(event: FileRegisteredEvent): Boolean = try {
+        emitter.send(Json.encodeToString(event)).awaitSuspending()
         true
     } catch (e: Exception) {
         false
