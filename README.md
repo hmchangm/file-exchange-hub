@@ -18,34 +18,27 @@ JetStream event for downstream consumers.
 ## Runtime Flow
 
 ```mermaid
-flowchart LR
+flowchart TD
   subgraph Provider
-    P[Provider Service]
-    Upload[Upload object to MinIO bucket]
-    Register["POST /api/files/register"]
+    P[Provider Service] --> Upload[Upload object to MinIO]
+    Upload --> Register["POST /api/files/register"]
   end
 
   subgraph Hub[File Exchange Hub]
-    API[REST API]
-    Verify[Verify object exists in MinIO]
-    DB[(MariaDB file metadata and deliveries)]
-    Event[NATS JetStream files.registered]
+    Register --> API[REST API]
+    API --> Verify[Verify object exists]
+    Verify --> DB[(MariaDB)]
+    DB --> Event[NATS JetStream]
   end
 
   subgraph Consumer
-    C[Consumer Service]
-    Search["GET /api/files or /api/files/missing"]
-    Process[Download/process object from MinIO]
-    Mark["PUT /api/files/{id}/delivery"]
+    Event -. optional signal .-> C[Consumer Service]
+    C --> Search["GET /api/files/missing"]
+    Search --> API
+    C --> Process[Download and process object]
+    Process --> Mark["PUT /api/files/{id}/delivery"]
+    Mark --> API
   end
-
-  P --> Upload --> Register --> API
-  API --> Verify --> DB --> Event
-  C --> Search --> API
-  API --> Search
-  C --> Process --> Mark --> API
-  API --> DB
-  Event -. optional push signal .-> C
 ```
 
 1. `POST /api/files/register` receives file metadata.
