@@ -45,7 +45,7 @@
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc</artifactId></dependency>
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-rest-kotlin-serialization</artifactId></dependency>
     <!-- DB -->
-    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-reactive-mysql-client</artifactId></dependency>
+    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-reactive-mariadb-client</artifactId></dependency>
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-jdbc-mariadb</artifactId></dependency>
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-flyway</artifactId></dependency>
     <!-- MinIO / S3 -->
