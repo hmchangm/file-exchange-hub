@@ -68,6 +68,7 @@ External Client
 | `filename` | VARCHAR(255) | original filename |
 | `content_type` | VARCHAR(128) | e.g. `application/pdf` |
 | `file_size` | BIGINT | bytes |
+| `checksum` | VARCHAR(32) | MD5 hex digest, client-supplied |
 | `uploader_id` | VARCHAR(255) | client-supplied identifier |
 | `tags` | JSON | optional key-value labels |
 | `status` | ENUM(`REGISTERED`, `FAILED`) | set after MinIO verification |
@@ -106,6 +107,7 @@ Request body:
   "filename": "report.pdf",
   "contentType": "application/pdf",
   "fileSize": 204800,
+  "checksum": "d41d8cd98f00b204e9800998ecf8427e",
   "uploaderId": "client-system-A",
   "tags": { "department": "finance" }
 }
@@ -182,6 +184,7 @@ Payload:
   "filename": "report.pdf",
   "contentType": "application/pdf",
   "fileSize": 204800,
+  "checksum": "d41d8cd98f00b204e9800998ecf8427e",
   "uploaderId": "client-system-A",
   "tags": { "department": "finance" },
   "registeredAt": "2026-05-03T10:00:00Z"
