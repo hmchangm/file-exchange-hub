@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: tw.brandy.ironman.hub.service.FileRegistrationServiceTest
--------------------------------------------------------------------------------
-Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.386 s -- in tw.brandy.ironman.hub.service.FileRegistrationServiceTest
