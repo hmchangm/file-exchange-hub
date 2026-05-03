@@ -5,7 +5,7 @@ import org.testcontainers.containers.MariaDBContainer
 
 class MariaDbTestResource : QuarkusTestResourceLifecycleManager {
 
-    private val container = MariaDBContainer("mariadb:11")
+    private val container = MariaDBContainer("mariadb:10.11")
         .withDatabaseName("filehub")
         .withUsername("hub")
         .withPassword("hub")

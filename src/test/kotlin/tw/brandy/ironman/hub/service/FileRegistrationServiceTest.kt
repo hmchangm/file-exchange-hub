@@ -1,17 +1,18 @@
 package tw.brandy.ironman.hub.service
 
-import io.mockk.*
 import io.smallrye.mutiny.Uni
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import tw.brandy.ironman.hub.repository.FileMetadataRepository
+import tw.brandy.ironman.hub.domain.FileMetadata
+import tw.brandy.ironman.hub.domain.FileRegisteredEvent
+import tw.brandy.ironman.hub.repository.FileMetadataStore
 import tw.brandy.ironman.hub.resource.dto.RegisterFileRequest
 
 class FileRegistrationServiceTest {
 
-    private val verifier = mockk<MinioVerifier>()
-    private val repository = mockk<FileMetadataRepository>()
-    private val publisher = mockk<FileEventPublisher>()
+    private val verifier = FakeObjectStoreVerifier()
+    private val repository = FakeFileMetadataStore()
+    private val publisher = FakeFileRegistrationEventPublisher()
     private val service = FileRegistrationService(verifier, repository, publisher)
 
     private val validRequest = RegisterFileRequest(
@@ -29,20 +30,18 @@ class FileRegistrationServiceTest {
 
     @Test
     fun `returns success with eventPublished true when all steps succeed`() {
-        every { verifier.exists("incoming", "reports/report.pdf") } returns true
-        every { repository.insert(any()) } returns Uni.createFrom().item(Unit)
-        every { publisher.publish(any()) } returns true
+        verifier.objectExists = true
+        publisher.publishResult = true
         val result = service.register(validRequest).await().indefinitely()
         assertTrue(result.eventPublished)
         assertEquals("REGISTERED", result.status)
-        verify { repository.insert(any()) }
+        assertEquals(1, repository.insertCount)
     }
 
     @Test
     fun `returns eventPublished false when NATS publish fails`() {
-        every { verifier.exists("incoming", "reports/report.pdf") } returns true
-        every { repository.insert(any()) } returns Uni.createFrom().item(Unit)
-        every { publisher.publish(any()) } returns false
+        verifier.objectExists = true
+        publisher.publishResult = false
         val result = service.register(validRequest).await().indefinitely()
         assertFalse(result.eventPublished)
         assertEquals("REGISTERED", result.status)
@@ -50,20 +49,45 @@ class FileRegistrationServiceTest {
 
     @Test
     fun `throws ObjectNotFoundException when file not found in MinIO`() {
-        every { verifier.exists("incoming", "reports/report.pdf") } returns false
+        verifier.objectExists = false
         assertThrows(ObjectNotFoundException::class.java) {
             service.register(validRequest).await().indefinitely()
         }
-        verify(exactly = 0) { repository.insert(any()) }
+        assertEquals(0, repository.insertCount)
     }
 
     @Test
     fun `registers successfully when checksum is null (bypass)`() {
         val req = validRequest.copy(checksum = null)
-        every { verifier.exists("incoming", "reports/report.pdf") } returns true
-        every { repository.insert(any()) } returns Uni.createFrom().item(Unit)
-        every { publisher.publish(any()) } returns true
+        verifier.objectExists = true
+        publisher.publishResult = true
         val result = service.register(req).await().indefinitely()
         assertEquals("REGISTERED", result.status)
+    }
+
+    private class FakeObjectStoreVerifier : ObjectStoreVerifier {
+        var objectExists = true
+        override fun exists(bucket: String, objectKey: String): Boolean = objectExists
+    }
+
+    private class FakeFileMetadataStore : FileMetadataStore {
+        var insertCount = 0
+        var inserted: FileMetadata? = null
+
+        override fun insert(metadata: FileMetadata): Uni<Unit> {
+            insertCount += 1
+            inserted = metadata
+            return Uni.createFrom().item(Unit)
+        }
+    }
+
+    private class FakeFileRegistrationEventPublisher : FileRegistrationEventPublisher {
+        var publishResult = true
+        var published: FileRegisteredEvent? = null
+
+        override fun publish(event: FileRegisteredEvent): Boolean {
+            published = event
+            return publishResult
+        }
     }
 }

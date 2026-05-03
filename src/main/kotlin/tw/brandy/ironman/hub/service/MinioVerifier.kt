@@ -5,10 +5,14 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 
-@ApplicationScoped
-class MinioVerifier(private val s3Client: S3Client) {
+interface ObjectStoreVerifier {
+    fun exists(bucket: String, objectKey: String): Boolean
+}
 
-    fun exists(bucket: String, objectKey: String): Boolean = try {
+@ApplicationScoped
+class MinioVerifier(private val s3Client: S3Client) : ObjectStoreVerifier {
+
+    override fun exists(bucket: String, objectKey: String): Boolean = try {
         s3Client.headObject(HeadObjectRequest.builder().bucket(bucket).key(objectKey).build())
         true
     } catch (e: NoSuchKeyException) {

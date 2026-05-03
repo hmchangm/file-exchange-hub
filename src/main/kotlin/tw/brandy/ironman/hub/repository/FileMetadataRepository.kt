@@ -10,15 +10,19 @@ import tw.brandy.ironman.hub.domain.FileStatus
 import java.time.Instant
 import java.time.ZoneOffset
 
+interface FileMetadataStore {
+    fun insert(metadata: FileMetadata): Uni<Unit>
+}
+
 @ApplicationScoped
-class FileMetadataRepository(private val pool: MySQLPool) {
+class FileMetadataRepository(private val pool: MySQLPool) : FileMetadataStore {
 
     fun findById(id: String): Uni<FileMetadata?> =
         pool.preparedQuery("SELECT * FROM file_metadata WHERE id = ?")
             .execute(Tuple.of(id))
             .map { rows -> rows.firstOrNull()?.toFileMetadata() }
 
-    fun insert(metadata: FileMetadata): Uni<Unit> =
+    override fun insert(metadata: FileMetadata): Uni<Unit> =
         pool.preparedQuery("""
             INSERT INTO file_metadata (id, bucket, report_id, report_category, object_key,
                 filename, content_type, file_size, checksum, uploader_id, tags,
