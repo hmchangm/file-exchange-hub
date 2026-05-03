@@ -68,7 +68,7 @@ External Client
 | `filename` | VARCHAR(255) | original filename |
 | `content_type` | VARCHAR(128) | e.g. `application/pdf` |
 | `file_size` | BIGINT | bytes |
-| `checksum` | VARCHAR(32) | MD5 hex digest, client-supplied |
+| `checksum` | VARCHAR(256) NULL | hex digest, client-supplied; `null` bypasses checksum validation |
 | `uploader_id` | VARCHAR(255) | client-supplied identifier |
 | `tags` | JSON | optional key-value labels |
 | `status` | ENUM(`REGISTERED`, `FAILED`) | set after MinIO verification |
@@ -123,8 +123,10 @@ Response `201`:
 ```
 - `404` if object not found in MinIO
 - `503` if MinIO is unreachable
-- `422` if request validation fails
+- `422` if request validation fails (e.g. `checksum` present but not a valid hex string)
 - `201` with `"eventPublished": false` if NATS publish fails (file is still registered)
+
+> **Checksum bypass:** omit `checksum` or send `null` to skip validation. Hub stores `null` in the DB and includes `"checksum": null` in the NATS event.
 
 ### Get file metadata
 ```
