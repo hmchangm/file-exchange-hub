@@ -17,6 +17,37 @@ JetStream event for downstream consumers.
 
 ## Runtime Flow
 
+```mermaid
+flowchart LR
+  subgraph Provider
+    P[Provider Service]
+    Upload[Upload object to MinIO bucket]
+    Register["POST /api/files/register"]
+  end
+
+  subgraph Hub[File Exchange Hub]
+    API[REST API]
+    Verify[Verify object exists in MinIO]
+    DB[(MariaDB file metadata and deliveries)]
+    Event[NATS JetStream files.registered]
+  end
+
+  subgraph Consumer
+    C[Consumer Service]
+    Search["GET /api/files or /api/files/missing"]
+    Process[Download/process object from MinIO]
+    Mark["PUT /api/files/{id}/delivery"]
+  end
+
+  P --> Upload --> Register --> API
+  API --> Verify --> DB --> Event
+  C --> Search --> API
+  API --> Search
+  C --> Process --> Mark --> API
+  API --> DB
+  Event -. optional push signal .-> C
+```
+
 1. `POST /api/files/register` receives file metadata.
 2. The service checks the object exists in MinIO using `HEAD`.
 3. Metadata is inserted into MariaDB.
