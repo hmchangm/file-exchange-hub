@@ -1,11 +1,11 @@
 package tw.brandy.ironman.hub.resource
 
-import jakarta.transaction.Transactional
+import io.smallrye.mutiny.Uni
 import jakarta.ws.rs.*
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import tw.brandy.ironman.hub.domain.FileDelivery
 import tw.brandy.ironman.hub.repository.FileDeliveryRepository
 import tw.brandy.ironman.hub.repository.FileMetadataRepository
@@ -25,23 +25,26 @@ class FileResource(
 
     @POST
     @Path("/register")
-    fun register(request: RegisterFileRequest): Response = try {
-        val response = registrationService.register(request)
-        Response.status(Response.Status.CREATED).entity(response).build()
-    } catch (e: ObjectNotFoundException) {
-        Response.status(Response.Status.NOT_FOUND)
-            .entity(ErrorResponse(e.message ?: "Not found", "OBJECT_NOT_FOUND")).build()
-    }
+    fun register(request: RegisterFileRequest): Uni<Response> =
+        registrationService.register(request)
+            .map { Response.status(Response.Status.CREATED).entity(it).build() }
+            .onFailure(ObjectNotFoundException::class.java).recoverWithItem { e ->
+                Response.status(Response.Status.NOT_FOUND)
+                    .entity(ErrorResponse(e.message ?: "Not found", "OBJECT_NOT_FOUND")).build()
+            }
 
     @GET
     @Path("/{id}")
-    fun getById(@PathParam("id") id: String): Response {
-        val metadata = metadataRepository.findByIdOrNull(id)
-            ?: return Response.status(Response.Status.NOT_FOUND)
-                .entity(ErrorResponse("File not found", "FILE_NOT_FOUND")).build()
-        val tags = metadata.tags?.let { Json.decodeFromString<Map<String, String>>(it) }
-        return Response.ok(FileMetadataDto.from(metadata, tags)).build()
-    }
+    fun getById(@PathParam("id") id: String): Uni<Response> =
+        metadataRepository.findById(id).map { metadata ->
+            if (metadata == null) {
+                Response.status(Response.Status.NOT_FOUND)
+                    .entity(ErrorResponse("File not found", "FILE_NOT_FOUND")).build()
+            } else {
+                val tags = metadata.tags?.let { Json.decodeFromString<Map<String, String>>(it) }
+                Response.ok(FileMetadataDto.from(metadata, tags)).build()
+            }
+        }
 
     @GET
     fun search(
@@ -49,14 +52,13 @@ class FileResource(
         @QueryParam("bucket") bucket: String?,
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int
-    ): Response {
-        val (files, total) = metadataRepository.search(uploaderId, bucket, page, size)
-        val dtos = files.map { m ->
-            val tags = m.tags?.let { Json.decodeFromString<Map<String, String>>(it) }
-            FileMetadataDto.from(m, tags)
+    ): Uni<Response> =
+        metadataRepository.search(uploaderId, bucket, page, size).map { (files, total) ->
+            val dtos = files.map { m ->
+                FileMetadataDto.from(m, m.tags?.let { Json.decodeFromString<Map<String, String>>(it) })
+            }
+            Response.ok(PagedFilesResponse(dtos, total, page, size)).build()
         }
-        return Response.ok(PagedFilesResponse(dtos, total, page, size)).build()
-    }
 
     @GET
     @Path("/missing")
@@ -66,33 +68,32 @@ class FileResource(
         @QueryParam("since") since: String?,
         @QueryParam("page") @DefaultValue("0") page: Int,
         @QueryParam("size") @DefaultValue("20") size: Int
-    ): Response {
+    ): Uni<Response> {
         val sinceInstant = since?.let { Instant.parse(it) } ?: Instant.now().minusSeconds(86400)
-        val (files, total) = metadataRepository.findMissing(consumerId, bucket, sinceInstant, page, size)
-        val dtos = files.map { m ->
-            val tags = m.tags?.let { Json.decodeFromString<Map<String, String>>(it) }
-            FileMetadataDto.from(m, tags)
+        return metadataRepository.findMissing(consumerId, bucket, sinceInstant, page, size).map { (files, total) ->
+            val dtos = files.map { m ->
+                FileMetadataDto.from(m, m.tags?.let { Json.decodeFromString<Map<String, String>>(it) })
+            }
+            Response.ok(PagedFilesResponse(dtos, total, page, size)).build()
         }
-        return Response.ok(PagedFilesResponse(dtos, total, page, size)).build()
     }
 
     @PUT
     @Path("/{id}/delivery")
-    @Transactional
-    fun markProcessed(@PathParam("id") id: String, request: MarkProcessedRequest): Response {
-        metadataRepository.findByIdOrNull(id)
-            ?: return Response.status(Response.Status.NOT_FOUND)
-                .entity(ErrorResponse("File not found", "FILE_NOT_FOUND")).build()
-
-        val existing = deliveryRepository.findByFileIdAndConsumerId(id, request.consumerId)
-        if (existing == null) {
-            val delivery = FileDelivery().apply {
-                fileId = id
-                consumerId = request.consumerId
-                note = request.note
+    fun markProcessed(@PathParam("id") id: String, request: MarkProcessedRequest): Uni<Response> =
+        metadataRepository.findById(id).flatMap { metadata ->
+            if (metadata == null) {
+                Uni.createFrom().item(
+                    Response.status(Response.Status.NOT_FOUND)
+                        .entity(ErrorResponse("File not found", "FILE_NOT_FOUND")).build()
+                )
+            } else {
+                val delivery = FileDelivery(
+                    fileId = id,
+                    consumerId = request.consumerId,
+                    note = request.note
+                )
+                deliveryRepository.insertIgnore(delivery).map { Response.ok().build() }
             }
-            deliveryRepository.persist(delivery)
         }
-        return Response.ok().build()
-    }
 }

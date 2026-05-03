@@ -1,7 +1,7 @@
 package tw.brandy.ironman.hub.repository
 
 import io.smallrye.mutiny.Uni
-import io.vertx.mutiny.mariadbclient.MariaDBPool
+import io.vertx.mutiny.mysqlclient.MySQLPool
 import io.vertx.mutiny.sqlclient.Row
 import io.vertx.mutiny.sqlclient.Tuple
 import jakarta.enterprise.context.ApplicationScoped
@@ -11,7 +11,7 @@ import java.time.Instant
 import java.time.ZoneOffset
 
 @ApplicationScoped
-class FileMetadataRepository(private val pool: MariaDBPool) {
+class FileMetadataRepository(private val pool: MySQLPool) {
 
     fun findById(id: String): Uni<FileMetadata?> =
         pool.preparedQuery("SELECT * FROM file_metadata WHERE id = ?")
@@ -25,13 +25,13 @@ class FileMetadataRepository(private val pool: MariaDBPool) {
                 status, remark, error_code, registered_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """.trimIndent())
-            .execute(Tuple.of(
+            .execute(Tuple.from(listOf(
                 metadata.id, metadata.bucket, metadata.reportId, metadata.reportCategory,
                 metadata.objectKey, metadata.filename, metadata.contentType, metadata.fileSize,
                 metadata.checksum, metadata.uploaderId, metadata.tags,
                 metadata.status.name, metadata.remark, metadata.errorCode,
                 metadata.registeredAt.atOffset(ZoneOffset.UTC).toLocalDateTime()
-            ))
+            )))
             .map { Unit }
 
     fun search(uploaderId: String?, bucket: String?, page: Int, size: Int): Uni<Pair<List<FileMetadata>, Long>> {
