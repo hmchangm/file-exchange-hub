@@ -72,7 +72,8 @@ External Client
 | `uploader_id` | VARCHAR(255) | client-supplied identifier |
 | `tags` | JSON | optional key-value labels |
 | `status` | ENUM(`REGISTERED`, `FAILED`) | set after MinIO verification |
-| `remark` | VARCHAR(1024) | add remark for failed or error |
+| `remark` | VARCHAR(1024) NULL | human-readable detail for FAILED status |
+| `error_code` | VARCHAR(64) NULL | machine-readable error code for FAILED status (e.g. `OBJECT_NOT_FOUND`, `MINIO_UNAVAILABLE`) |
 | `registered_at` | TIMESTAMP | server-set on creation |
 
 Index on `(registered_at, bucket, status)` for missing-file queries.
