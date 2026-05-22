@@ -14,12 +14,13 @@ interface FileRegistrationEventPublisher {
 
 @ApplicationScoped
 class FileEventPublisher(
-    @Channel("files-registered") private val emitter: MutinyEmitter<String>
+    @Channel("files-registered") private val emitter: MutinyEmitter<String>,
 ) : FileRegistrationEventPublisher {
-    override suspend fun publish(event: FileRegisteredEvent): Boolean = try {
-        emitter.send(Json.encodeToString(event)).awaitSuspending()
-        true
-    } catch (e: Exception) {
-        false
-    }
+    override suspend fun publish(event: FileRegisteredEvent): Boolean =
+        try {
+            emitter.send(Json.encodeToString(event)).awaitSuspending()
+            true
+        } catch (e: Exception) {
+            false
+        }
 }

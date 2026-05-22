@@ -6,7 +6,8 @@ import io.restassured.module.kotlin.extensions.Extract
 import io.restassured.module.kotlin.extensions.Given
 import io.restassured.module.kotlin.extensions.Then
 import io.restassured.module.kotlin.extensions.When
-import org.hamcrest.CoreMatchers.*
+import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.CoreMatchers.notNullValue
 import org.junit.jupiter.api.Test
 import tw.brandy.ironman.hub.MariaDbTestResource
 import tw.brandy.ironman.hub.MinioTestResource
@@ -17,8 +18,8 @@ import tw.brandy.ironman.hub.NatsTestResource
 @QuarkusTestResource(MinioTestResource::class)
 @QuarkusTestResource(NatsTestResource::class)
 class FileResourceIT {
-
-    private val validBody = """
+    private val validBody =
+        """
         {
           "bucket": "incoming",
           "reportId": "WXG",
@@ -30,7 +31,7 @@ class FileResourceIT {
           "checksum": "d41d8cd98f00b204e9800998ecf8427e",
           "uploaderId": "test-client"
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Test
     fun `register returns 201 with valid payload and existing object`() {
@@ -63,9 +64,11 @@ class FileResourceIT {
 
     @Test
     fun `register succeeds with null checksum bypass`() {
-        val body = validBody.replace(
-            """"checksum": "d41d8cd98f00b204e9800998ecf8427e",""", ""
-        )
+        val body =
+            validBody.replace(
+                """"checksum": "d41d8cd98f00b204e9800998ecf8427e",""",
+                "",
+            )
         Given {
             contentType("application/json")
             body(body)
@@ -88,16 +91,17 @@ class FileResourceIT {
 
     @Test
     fun `mark processed is idempotent`() {
-        val id = Given {
-            contentType("application/json")
-            body(validBody)
-        } When {
-            post("/api/files/register")
-        } Then {
-            statusCode(201)
-        } Extract {
-            path<String>("id")
-        }
+        val id =
+            Given {
+                contentType("application/json")
+                body(validBody)
+            } When {
+                post("/api/files/register")
+            } Then {
+                statusCode(201)
+            } Extract {
+                path<String>("id")
+            }
 
         val deliveryBody = """{"consumerId": "consumer-A"}"""
         repeat(2) {

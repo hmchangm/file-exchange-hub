@@ -1,15 +1,14 @@
 package tw.brandy.ironman.hub.service
 
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 import java.lang.reflect.Proxy
 
 class MinioVerifierTest {
-
     @Test
     fun `returns true when object exists`() {
         val verifier = MinioVerifier(s3ClientReturning(HeadObjectResponse.builder().build()))
@@ -22,16 +21,14 @@ class MinioVerifierTest {
         assertFalse(verifier.exists("my-bucket", "path/to/missing.pdf"))
     }
 
-    private fun s3ClientReturning(response: HeadObjectResponse): S3Client =
-        s3Client { response }
+    private fun s3ClientReturning(response: HeadObjectResponse): S3Client = s3Client { response }
 
-    private fun s3ClientThrowing(error: RuntimeException): S3Client =
-        s3Client { throw error }
+    private fun s3ClientThrowing(error: RuntimeException): S3Client = s3Client { throw error }
 
     private fun s3Client(headObject: () -> HeadObjectResponse): S3Client =
         Proxy.newProxyInstance(
             S3Client::class.java.classLoader,
-            arrayOf(S3Client::class.java)
+            arrayOf(S3Client::class.java),
         ) { _, method, _ ->
             when (method.name) {
                 "headObject" -> headObject()

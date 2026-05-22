@@ -8,10 +8,10 @@ import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName
 
 class NatsTestResource : QuarkusTestResourceLifecycleManager {
-
-    private val container = GenericContainer(DockerImageName.parse("nats:2.10-alpine"))
-        .withCommand("-js")
-        .withExposedPorts(4222)
+    private val container =
+        GenericContainer(DockerImageName.parse("nats:2.10-alpine"))
+            .withCommand("-js")
+            .withExposedPorts(4222)
 
     override fun start(): Map<String, String> {
         container.start()
@@ -19,11 +19,13 @@ class NatsTestResource : QuarkusTestResourceLifecycleManager {
 
         Nats.connect(natsUrl).use { nc ->
             val jsm = nc.jetStreamManagement()
-            val streamConfig = StreamConfiguration.builder()
-                .name("FILES")
-                .subjects("files.registered")
-                .storageType(StorageType.Memory)
-                .build()
+            val streamConfig =
+                StreamConfiguration
+                    .builder()
+                    .name("FILES")
+                    .subjects("files.registered")
+                    .storageType(StorageType.Memory)
+                    .build()
             jsm.addStream(streamConfig)
         }
 

@@ -4,11 +4,11 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager
 import org.testcontainers.containers.MariaDBContainer
 
 class MariaDbTestResource : QuarkusTestResourceLifecycleManager {
-
-    private val container = MariaDBContainer("mariadb:10.11")
-        .withDatabaseName("filehub")
-        .withUsername("hub")
-        .withPassword("hub")
+    private val container =
+        MariaDBContainer("mariadb:10.11")
+            .withDatabaseName("filehub")
+            .withUsername("hub")
+            .withPassword("hub")
 
     override fun start(): Map<String, String> {
         container.start()
@@ -17,7 +17,7 @@ class MariaDbTestResource : QuarkusTestResourceLifecycleManager {
             "quarkus.datasource.username" to container.username,
             "quarkus.datasource.password" to container.password,
             "quarkus.datasource.reactive.url" to
-                "mysql://${container.host}:${container.getMappedPort(3306)}/filehub"
+                "mysql://${container.host}:${container.getMappedPort(3306)}/filehub",
         )
     }
 

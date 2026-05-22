@@ -20,5 +20,5 @@ data class FileMetadata(
     val status: FileStatus = FileStatus.REGISTERED,
     val remark: String? = null,
     val errorCode: String? = null,
-    val registeredAt: Instant = Instant.now()
+    val registeredAt: Instant = Instant.now(),
 )

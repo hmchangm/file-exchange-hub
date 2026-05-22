@@ -15,10 +15,13 @@ data class FileRegisteredEvent(
     val checksum: String?,
     val uploaderId: String,
     val tags: Map<String, String>?,
-    val registeredAt: String
+    val registeredAt: String,
 ) {
     companion object {
-        fun from(metadata: FileMetadata, tags: Map<String, String>?): FileRegisteredEvent =
+        fun from(
+            metadata: FileMetadata,
+            tags: Map<String, String>?,
+        ): FileRegisteredEvent =
             FileRegisteredEvent(
                 id = metadata.id,
                 bucket = metadata.bucket,
@@ -31,7 +34,7 @@ data class FileRegisteredEvent(
                 checksum = metadata.checksum,
                 uploaderId = metadata.uploaderId,
                 tags = tags,
-                registeredAt = metadata.registeredAt.toString()
+                registeredAt = metadata.registeredAt.toString(),
             )
     }
 }

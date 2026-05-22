@@ -13,5 +13,5 @@ data class RegisterFileRequest(
     val fileSize: Long,
     val checksum: String? = null,
     val uploaderId: String,
-    val tags: Map<String, String>? = null
+    val tags: Map<String, String>? = null,
 )

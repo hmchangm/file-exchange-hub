@@ -13,7 +13,6 @@ import java.net.URI
 import java.nio.file.Files
 
 class MinioTestResource : QuarkusTestResourceLifecycleManager {
-
     companion object {
         private val container = MinIOContainer("minio/minio:latest")
         lateinit var s3Client: S3Client
@@ -22,24 +21,29 @@ class MinioTestResource : QuarkusTestResourceLifecycleManager {
     override fun start(): Map<String, String> {
         container.start()
 
-        s3Client = S3Client.builder()
-            .endpointOverride(URI.create(container.s3URL))
-            .credentialsProvider(
-                StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(container.userName, container.password)
-                )
-            )
-            .region(Region.US_EAST_1)
-            .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
-            .build()
+        s3Client =
+            S3Client
+                .builder()
+                .endpointOverride(URI.create(container.s3URL))
+                .credentialsProvider(
+                    StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(container.userName, container.password),
+                    ),
+                ).region(Region.US_EAST_1)
+                .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
+                .build()
 
         s3Client.createBucket(CreateBucketRequest.builder().bucket("incoming").build())
 
         val tempFile = Files.createTempFile("sample", ".pdf")
         tempFile.toFile().writeText("sample pdf content")
         s3Client.putObject(
-            PutObjectRequest.builder().bucket("incoming").key("test/sample.pdf").build(),
-            tempFile
+            PutObjectRequest
+                .builder()
+                .bucket("incoming")
+                .key("test/sample.pdf")
+                .build(),
+            tempFile,
         )
         Files.delete(tempFile)
 

@@ -5,5 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MarkProcessedRequest(
     val consumerId: String,
-    val note: String? = null
+    val note: String? = null,
 )

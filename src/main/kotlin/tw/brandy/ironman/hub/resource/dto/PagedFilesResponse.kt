@@ -7,5 +7,5 @@ data class PagedFilesResponse(
     val files: List<FileMetadataDto>,
     val total: Long,
     val page: Int,
-    val size: Int
+    val size: Int,
 )

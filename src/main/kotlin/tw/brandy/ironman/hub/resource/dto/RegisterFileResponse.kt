@@ -7,5 +7,5 @@ data class RegisterFileResponse(
     val id: String,
     val status: String,
     val eventPublished: Boolean,
-    val registeredAt: String
+    val registeredAt: String,
 )

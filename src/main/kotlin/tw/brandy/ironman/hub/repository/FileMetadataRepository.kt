@@ -1,7 +1,7 @@
 package tw.brandy.ironman.hub.repository
 
 import io.smallrye.mutiny.coroutines.awaitSuspending
-import io.vertx.mutiny.mysqlclient.MySQLPool
+import io.vertx.mutiny.sqlclient.Pool
 import io.vertx.mutiny.sqlclient.Row
 import io.vertx.mutiny.sqlclient.Tuple
 import jakarta.enterprise.context.ApplicationScoped
@@ -15,59 +15,99 @@ interface FileMetadataStore {
 }
 
 @ApplicationScoped
-class FileMetadataRepository(private val pool: MySQLPool) : FileMetadataStore {
-
+class FileMetadataRepository(
+    private val pool: Pool,
+) : FileMetadataStore {
     suspend fun findById(id: String): FileMetadata? =
-        pool.preparedQuery("SELECT * FROM file_metadata WHERE id = ?")
+        pool
+            .preparedQuery("SELECT * FROM file_metadata WHERE id = ?")
             .execute(Tuple.of(id))
             .map { rows -> rows.firstOrNull()?.toFileMetadata() }
             .awaitSuspending()
 
     override suspend fun insert(metadata: FileMetadata) {
-        pool.preparedQuery("""
-            INSERT INTO file_metadata (id, bucket, report_id, report_category, object_key,
-                filename, content_type, file_size, checksum, uploader_id, tags,
-                status, remark, error_code, registered_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """.trimIndent())
-            .execute(Tuple.from(listOf(
-                metadata.id, metadata.bucket, metadata.reportId, metadata.reportCategory,
-                metadata.objectKey, metadata.filename, metadata.contentType, metadata.fileSize,
-                metadata.checksum, metadata.uploaderId, metadata.tags,
-                metadata.status.name, metadata.remark, metadata.errorCode,
-                metadata.registeredAt.atOffset(ZoneOffset.UTC).toLocalDateTime()
-            )))
-            .map { Unit }
+        pool
+            .preparedQuery(
+                """
+                INSERT INTO file_metadata (id, bucket, report_id, report_category, object_key,
+                    filename, content_type, file_size, checksum, uploader_id, tags,
+                    status, remark, error_code, registered_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """.trimIndent(),
+            ).execute(
+                Tuple.from(
+                    listOf(
+                        metadata.id,
+                        metadata.bucket,
+                        metadata.reportId,
+                        metadata.reportCategory,
+                        metadata.objectKey,
+                        metadata.filename,
+                        metadata.contentType,
+                        metadata.fileSize,
+                        metadata.checksum,
+                        metadata.uploaderId,
+                        metadata.tags,
+                        metadata.status.name,
+                        metadata.remark,
+                        metadata.errorCode,
+                        metadata.registeredAt.atOffset(ZoneOffset.UTC).toLocalDateTime(),
+                    ),
+                ),
+            ).map { Unit }
             .awaitSuspending()
     }
 
-    suspend fun search(uploaderId: String?, bucket: String?, page: Int, size: Int): Pair<List<FileMetadata>, Long> {
+    suspend fun search(
+        uploaderId: String?,
+        bucket: String?,
+        page: Int,
+        size: Int,
+    ): Pair<List<FileMetadata>, Long> {
         val conditions = mutableListOf("status = ?")
         val params = mutableListOf<Any?>(FileStatus.REGISTERED.name)
-        if (uploaderId != null) { conditions += "uploader_id = ?"; params += uploaderId }
-        if (bucket != null) { conditions += "bucket = ?"; params += bucket }
+        if (uploaderId != null) {
+            conditions += "uploader_id = ?"
+            params += uploaderId
+        }
+        if (bucket != null) {
+            conditions += "bucket = ?"
+            params += bucket
+        }
         val where = conditions.joinToString(" AND ")
         val offset = page * size
-        val countRows = pool.preparedQuery("SELECT COUNT(*) FROM file_metadata WHERE $where")
-            .execute(Tuple.from(params))
-            .awaitSuspending()
+        val countRows =
+            pool
+                .preparedQuery("SELECT COUNT(*) FROM file_metadata WHERE $where")
+                .execute(Tuple.from(params))
+                .awaitSuspending()
         val total = countRows.first().getLong(0) ?: 0L
-        val rows = pool.preparedQuery(
-            "SELECT * FROM file_metadata WHERE $where ORDER BY registered_at DESC LIMIT ? OFFSET ?"
-        ).execute(Tuple.from(params + listOf(size, offset)))
-            .awaitSuspending()
+        val rows =
+            pool
+                .preparedQuery(
+                    "SELECT * FROM file_metadata WHERE $where ORDER BY registered_at DESC LIMIT ? OFFSET ?",
+                ).execute(Tuple.from(params + listOf(size, offset)))
+                .awaitSuspending()
         return rows.map { it.toFileMetadata() } to total
     }
 
-    suspend fun findMissing(consumerId: String, bucket: String?, since: Instant, page: Int, size: Int): Pair<List<FileMetadata>, Long> {
+    suspend fun findMissing(
+        consumerId: String,
+        bucket: String?,
+        since: Instant,
+        page: Int,
+        size: Int,
+    ): Pair<List<FileMetadata>, Long> {
         val bucketClause = if (bucket != null) "AND fm.bucket = ? " else ""
-        val params = mutableListOf<Any?>(
-            FileStatus.REGISTERED.name,
-            since.atOffset(ZoneOffset.UTC).toLocalDateTime(),
-            consumerId
-        )
+        val params =
+            mutableListOf<Any?>(
+                FileStatus.REGISTERED.name,
+                since.atOffset(ZoneOffset.UTC).toLocalDateTime(),
+                consumerId,
+            )
         if (bucket != null) params += bucket
-        val baseSql = """
+        val baseSql =
+            """
             FROM file_metadata fm
             WHERE fm.status = ?
             AND fm.registered_at >= ?
@@ -76,33 +116,38 @@ class FileMetadataRepository(private val pool: MySQLPool) : FileMetadataStore {
                 WHERE fd.file_id = fm.id AND fd.consumer_id = ?
             )
             $bucketClause
-        """.trimIndent()
+            """.trimIndent()
         val offset = page * size
-        val countRows = pool.preparedQuery("SELECT COUNT(*) $baseSql")
-            .execute(Tuple.from(params))
-            .awaitSuspending()
+        val countRows =
+            pool
+                .preparedQuery("SELECT COUNT(*) $baseSql")
+                .execute(Tuple.from(params))
+                .awaitSuspending()
         val total = countRows.first().getLong(0) ?: 0L
-        val rows = pool.preparedQuery("SELECT fm.* $baseSql ORDER BY fm.registered_at LIMIT ? OFFSET ?")
-            .execute(Tuple.from(params + listOf(size, offset)))
-            .awaitSuspending()
+        val rows =
+            pool
+                .preparedQuery("SELECT fm.* $baseSql ORDER BY fm.registered_at LIMIT ? OFFSET ?")
+                .execute(Tuple.from(params + listOf(size, offset)))
+                .awaitSuspending()
         return rows.map { it.toFileMetadata() } to total
     }
 
-    private fun Row.toFileMetadata(): FileMetadata = FileMetadata(
-        id = getString("id"),
-        bucket = getString("bucket"),
-        reportId = getString("report_id"),
-        reportCategory = getString("report_category"),
-        objectKey = getString("object_key"),
-        filename = getString("filename"),
-        contentType = getString("content_type"),
-        fileSize = getLong("file_size"),
-        checksum = getString("checksum"),
-        uploaderId = getString("uploader_id"),
-        tags = getString("tags"),
-        status = FileStatus.valueOf(getString("status")),
-        remark = getString("remark"),
-        errorCode = getString("error_code"),
-        registeredAt = getLocalDateTime("registered_at").toInstant(ZoneOffset.UTC)
-    )
+    private fun Row.toFileMetadata(): FileMetadata =
+        FileMetadata(
+            id = getString("id"),
+            bucket = getString("bucket"),
+            reportId = getString("report_id"),
+            reportCategory = getString("report_category"),
+            objectKey = getString("object_key"),
+            filename = getString("filename"),
+            contentType = getString("content_type"),
+            fileSize = getLong("file_size"),
+            checksum = getString("checksum"),
+            uploaderId = getString("uploader_id"),
+            tags = getString("tags"),
+            status = FileStatus.valueOf(getString("status")),
+            remark = getString("remark"),
+            errorCode = getString("error_code"),
+            registeredAt = getLocalDateTime("registered_at").toInstant(ZoneOffset.UTC),
+        )
 }

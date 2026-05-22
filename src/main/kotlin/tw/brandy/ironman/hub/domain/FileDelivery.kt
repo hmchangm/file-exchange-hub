@@ -8,5 +8,5 @@ data class FileDelivery(
     val fileId: String,
     val consumerId: String,
     val note: String? = null,
-    val processedAt: Instant = Instant.now()
+    val processedAt: Instant = Instant.now(),
 )

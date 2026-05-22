@@ -19,15 +19,29 @@ data class FileMetadataDto(
     val status: String,
     val remark: String?,
     val errorCode: String?,
-    val registeredAt: String
+    val registeredAt: String,
 ) {
     companion object {
-        fun from(m: FileMetadata, tags: Map<String, String>?): FileMetadataDto = FileMetadataDto(
-            id = m.id, bucket = m.bucket, reportId = m.reportId, reportCategory = m.reportCategory,
-            objectKey = m.objectKey, filename = m.filename, contentType = m.contentType,
-            fileSize = m.fileSize, checksum = m.checksum, uploaderId = m.uploaderId,
-            tags = tags, status = m.status.name, remark = m.remark, errorCode = m.errorCode,
-            registeredAt = m.registeredAt.toString()
-        )
+        fun from(
+            m: FileMetadata,
+            tags: Map<String, String>?,
+        ): FileMetadataDto =
+            FileMetadataDto(
+                id = m.id,
+                bucket = m.bucket,
+                reportId = m.reportId,
+                reportCategory = m.reportCategory,
+                objectKey = m.objectKey,
+                filename = m.filename,
+                contentType = m.contentType,
+                fileSize = m.fileSize,
+                checksum = m.checksum,
+                uploaderId = m.uploaderId,
+                tags = tags,
+                status = m.status.name,
+                remark = m.remark,
+                errorCode = m.errorCode,
+                registeredAt = m.registeredAt.toString(),
+            )
     }
 }
