@@ -22,6 +22,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Run a single integration test class
 ./mvnw verify -DskipITs=false -Dit.test=FileResourceIT
+
+# Lint check (also runs automatically during verify)
+./mvnw ktlint:check
+
+# Auto-fix lint violations
+./mvnw ktlint:format
 ```
 
 Integration tests require Docker (Testcontainers launches MariaDB, MinIO, and NATS).
@@ -61,6 +67,8 @@ Two tables: `file_metadata` and `file_delivery`. The project uses **two datasour
 Tags are stored as a JSON string in `file_metadata.tags` and deserialized at the resource layer with `kotlinx.serialization`.
 
 ### Packages
+
+All source lives under `mlid.enghub.hub`:
 
 - `domain/` — plain data classes (`FileMetadata`, `FileDelivery`, `FileRegisteredEvent`)
 - `repository/` — database access; `FileMetadataStore` is the injectable interface

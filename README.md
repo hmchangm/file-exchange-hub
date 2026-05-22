@@ -14,6 +14,7 @@ JetStream event for downstream consumers.
 - MinIO through the S3 client
 - NATS JetStream reactive messaging
 - Testcontainers for integration tests
+- ktlint (via `ktlint-maven-plugin`) for code style enforcement
 
 ## Runtime Flow
 
@@ -188,6 +189,20 @@ Run unit and integration tests:
 ```
 
 Integration tests use Testcontainers for MariaDB, MinIO, and NATS.
+
+### Linting
+
+Check style (also runs automatically during `verify`):
+
+```bash
+./mvnw ktlint:check
+```
+
+Auto-fix style violations:
+
+```bash
+./mvnw ktlint:format
+```
 
 ## Database
 
