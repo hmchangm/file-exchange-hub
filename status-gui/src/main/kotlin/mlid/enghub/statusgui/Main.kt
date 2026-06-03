@@ -14,7 +14,7 @@ import mlid.enghub.statusgui.routing.missingFilesRoutes
 import mlid.enghub.statusgui.templates.layout
 
 fun main() {
-    connectDatabase()
+    connectDatabase() // registers HikariCP pool as Exposed's implicit default database
     val repo = ExposedFileQueryRepository()
     val port = System.getenv("GUI_PORT")?.toInt() ?: 8090
 

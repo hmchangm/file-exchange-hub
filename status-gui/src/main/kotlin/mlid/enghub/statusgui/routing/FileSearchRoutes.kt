@@ -3,6 +3,7 @@ package mlid.enghub.statusgui.routing
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
@@ -15,12 +16,15 @@ import java.time.LocalDate
 
 fun Application.fileSearchRoutes(repo: FileQueryRepository) {
     routing {
+        get("/") {
+            call.respondRedirect("/files")
+        }
         get("/files") {
             val uploaderId = call.request.queryParameters["uploaderId"]?.takeIf { it.isNotBlank() }
             val bucket = call.request.queryParameters["bucket"]?.takeIf { it.isNotBlank() }
             val status = call.request.queryParameters["status"]?.takeIf { it.isNotBlank() }
             val since = call.request.queryParameters["since"]?.takeIf { it.isNotBlank() }
-                ?.let { LocalDate.parse(it).atStartOfDay() }
+                ?.let { runCatching { LocalDate.parse(it) }.getOrNull()?.atStartOfDay() }
             val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 0
             val result = repo.search(uploaderId, bucket, status, since, page)
             call.respondText(

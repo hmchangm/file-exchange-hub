@@ -16,7 +16,7 @@ fun Application.missingFilesRoutes(repo: FileQueryRepository) {
             val consumerId = call.request.queryParameters["consumerId"]?.takeIf { it.isNotBlank() }
             val bucket = call.request.queryParameters["bucket"]?.takeIf { it.isNotBlank() }
             val since = call.request.queryParameters["since"]?.takeIf { it.isNotBlank() }
-                ?.let { LocalDate.parse(it) }
+                ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
             val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 0
             if (consumerId == null) {
                 call.respondText(
@@ -25,7 +25,7 @@ fun Application.missingFilesRoutes(repo: FileQueryRepository) {
                 )
                 return@get
             }
-            val sinceDateTime = since?.atStartOfDay() ?: LocalDateTime.now().minusSeconds(86400)
+            val sinceDateTime = since?.atStartOfDay() ?: LocalDateTime.now().minusDays(1)
             val result = repo.findMissing(consumerId, bucket, sinceDateTime, page)
             call.respondText(
                 renderMissingFiles(result.rows, result.total, page, consumerId, bucket, since, searched = true),
