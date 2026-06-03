@@ -58,6 +58,13 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
+        <configuration>
+          <!-- Pin docker-java's negotiated API version so Testcontainers can talk to
+               newer Docker daemons (avoids "client version 1.32 is too old"). -->
+          <systemPropertyVariables>
+            <api.version>1.41</api.version>
+          </systemPropertyVariables>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
