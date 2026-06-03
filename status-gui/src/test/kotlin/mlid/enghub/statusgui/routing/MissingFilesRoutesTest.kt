@@ -17,9 +17,10 @@ class MissingFilesRoutesTest {
     fun `GET missing without consumerId shows empty prompt`() = testApplication {
         val repo = FakeFileQueryRepository()
         application { missingFilesRoutes(repo) }
-        val body = client.get("/missing").bodyAsText()
-        assertContains(body, "Consumer ID")
-        assertContains(body, "Missing Files")
+        val response = client.get("/missing")
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "Consumer ID")
+        assertContains(response.bodyAsText(), "Missing Files")
     }
 
     @Test
@@ -36,9 +37,9 @@ class MissingFilesRoutesTest {
         val repo = FakeFileQueryRepository()
         repo.findMissingResult = PagedResult(emptyList(), 0)
         application { missingFilesRoutes(repo) }
-        val body = client.get("/missing?consumerId=consumer-a").bodyAsText()
-        assertEquals(HttpStatusCode.OK, client.get("/missing?consumerId=consumer-a").status)
-        assertContains(body, "No missing files")
+        val response = client.get("/missing?consumerId=consumer-a")
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "No missing files")
     }
 
     @Test
