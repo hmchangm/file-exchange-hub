@@ -52,11 +52,11 @@ fun layout(title: String, activeTab: String, block: BODY.() -> Unit): String =
             }
         }
         body {
+            val bodyCtx = this
             nav {
                 a(href = "/files", classes = if (activeTab == "search") "active" else null) { +"File Search" }
                 a(href = "/missing", classes = if (activeTab == "missing") "active" else null) { +"Missing Files" }
             }
-            div(classes = "container") { }
-            block()
+            div(classes = "container") { bodyCtx.block() }
         }
     }

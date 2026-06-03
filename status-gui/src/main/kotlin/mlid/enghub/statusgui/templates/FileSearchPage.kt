@@ -117,11 +117,13 @@ fun renderFileSearch(
 
 private fun searchUrl(uploaderId: String?, bucket: String?, status: String?, since: LocalDate?, page: Int): String {
     val params = buildList {
-        if (!uploaderId.isNullOrBlank()) add("uploaderId=$uploaderId")
-        if (!bucket.isNullOrBlank()) add("bucket=$bucket")
-        if (!status.isNullOrBlank()) add("status=$status")
+        if (!uploaderId.isNullOrBlank()) add("uploaderId=${enc(uploaderId!!)}")
+        if (!bucket.isNullOrBlank()) add("bucket=${enc(bucket!!)}")
+        if (!status.isNullOrBlank()) add("status=${enc(status!!)}")
         if (since != null) add("since=$since")
         if (page > 0) add("page=$page")
     }
     return "/files" + if (params.isEmpty()) "" else "?" + params.joinToString("&")
 }
+
+private fun enc(v: String): String = java.net.URLEncoder.encode(v, "UTF-8")
