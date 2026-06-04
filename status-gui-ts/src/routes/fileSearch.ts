@@ -8,7 +8,7 @@ function buildSearchUrl(params: {
   if (params.uploaderId) parts.push(`uploaderId=${encodeURIComponent(params.uploaderId)}`);
   if (params.bucket) parts.push(`bucket=${encodeURIComponent(params.bucket)}`);
   if (params.status) parts.push(`status=${encodeURIComponent(params.status)}`);
-  if (params.since) parts.push(`since=${params.since}`);
+  if (params.since) parts.push(`since=${encodeURIComponent(params.since)}`);
   if (params.page !== undefined && params.page > 0) parts.push(`page=${params.page}`);
   return '/files' + (parts.length ? '?' + parts.join('&') : '');
 }
