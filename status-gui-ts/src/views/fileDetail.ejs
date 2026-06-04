@@ -1,0 +1,41 @@
+<%- include('_head', { title: 'File Detail', activeTab: 'search' }) %>
+<a href="/files" class="back-link">← Back to search</a>
+<h2>File: <%= file.filename %></h2>
+<div class="detail-grid">
+  <div><div class="detail-label">ID</div><div><%= file.id %></div></div>
+  <div>
+    <div class="detail-label">Status</div>
+    <div><span class="badge-<%= file.status === 'FAILED' ? 'failed' : 'registered' %>"><%= file.status %></span></div>
+  </div>
+  <div><div class="detail-label">Filename</div><div><%= file.filename %></div></div>
+  <div><div class="detail-label">Bucket</div><div><%= file.bucket %></div></div>
+  <div><div class="detail-label">Report ID</div><div><%= file.reportId %></div></div>
+  <div><div class="detail-label">Report Category</div><div><%= file.reportCategory %></div></div>
+  <div><div class="detail-label">Uploader</div><div><%= file.uploaderId %></div></div>
+  <div><div class="detail-label">File Size</div><div><%= file.fileSize %> bytes</div></div>
+  <div><div class="detail-label">Content Type</div><div><%= file.contentType %></div></div>
+  <div><div class="detail-label">Checksum</div><div><%= file.checksum || '—' %></div></div>
+  <div><div class="detail-label">Object Key</div><div><%= file.objectKey %></div></div>
+  <div><div class="detail-label">Tags</div><div><%= file.tags || '—' %></div></div>
+  <div><div class="detail-label">Remark</div><div><%= file.remark || '—' %></div></div>
+  <div><div class="detail-label">Error Code</div><div><%= file.errorCode || '—' %></div></div>
+  <div><div class="detail-label">Registered At</div><div><%= file.registeredAt.toISOString().replace('T', ' ').slice(0, 19) %></div></div>
+</div>
+<h3>Delivery Records</h3>
+<% if (deliveries.length === 0) { %>
+  <p class="empty-msg">No consumer has processed this file yet.</p>
+<% } else { %>
+  <table>
+    <thead><tr><th>Consumer</th><th>Processed At</th><th>Note</th></tr></thead>
+    <tbody>
+      <% deliveries.forEach(function(d) { %>
+      <tr>
+        <td><%= d.consumerId %></td>
+        <td><%= d.processedAt.toISOString().replace('T', ' ').slice(0, 19) %></td>
+        <td><%= d.note || '—' %></td>
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+<% } %>
+<%- include('_foot') %>

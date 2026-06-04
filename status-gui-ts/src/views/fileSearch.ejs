@@ -1,0 +1,50 @@
+<%- include('_head', { title: 'File Search', activeTab: 'search' }) %>
+<h2>File Search</h2>
+<form action="/files" method="get" class="filter-bar">
+  <label>Uploader ID
+    <input type="text" name="uploaderId" placeholder="any" value="<%= uploaderId %>">
+  </label>
+  <label>Bucket
+    <input type="text" name="bucket" placeholder="any" value="<%= bucket %>">
+  </label>
+  <label>Status
+    <select name="status">
+      <option value="">any</option>
+      <option value="REGISTERED"<%= status === 'REGISTERED' ? ' selected' : '' %>>REGISTERED</option>
+      <option value="FAILED"<%= status === 'FAILED' ? ' selected' : '' %>>FAILED</option>
+    </select>
+  </label>
+  <label>Since
+    <input type="date" name="since" value="<%= since %>">
+  </label>
+  <button type="submit">Search</button>
+</form>
+<% if (rows.length === 0) { %>
+  <p class="empty-msg">No files found.</p>
+<% } else { %>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Filename</th><th>Bucket</th><th>Uploader</th><th>Status</th><th>Registered At</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% rows.forEach(function(row) { %>
+      <tr>
+        <td><a href="/files/<%= row.id %>"><%= row.id.slice(0, 8) %>…</a></td>
+        <td><%= row.filename %></td>
+        <td><%= row.bucket %></td>
+        <td><%= row.uploaderId %></td>
+        <td><span class="badge-<%= row.status === 'FAILED' ? 'failed' : 'registered' %>"><%= row.status %></span></td>
+        <td><%= row.registeredAt.toISOString().replace('T', ' ').slice(0, 16) %></td>
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  <div class="pagination">
+    Showing <%= page * 20 + 1 %>–<%= Math.min((page + 1) * 20, total) %> of <%= total %>
+    <% if (prevUrl) { %><a href="<%= prevUrl %>">← Prev</a><% } %>
+    <% if (nextUrl) { %><a href="<%= nextUrl %>">Next →</a><% } %>
+  </div>
+<% } %>
+<%- include('_foot') %>
