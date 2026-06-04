@@ -3,6 +3,7 @@ import path from 'path';
 import { auth } from 'express-openid-connect';
 import { FileQueryRepository } from './repository/types';
 import { fileSearchRouter } from './routes/fileSearch';
+import { missingRouter } from './routes/missing';
 
 export interface OidcConfig {
   issuerBaseURL: string;
@@ -29,6 +30,7 @@ export function createApp(repo: FileQueryRepository, oidcConfig?: OidcConfig): e
   }
 
   app.use('/', fileSearchRouter(repo));
+  app.use('/', missingRouter(repo));
 
   app.use((_err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     res.status(500).render('error', { message: 'An unexpected error occurred. Please try again.' });
