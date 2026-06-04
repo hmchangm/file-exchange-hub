@@ -32,7 +32,8 @@ export function createApp(repo: FileQueryRepository, oidcConfig?: OidcConfig): e
   app.use('/', fileSearchRouter(repo));
   app.use('/', missingRouter(repo));
 
-  app.use((_err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error(err);
     res.status(500).render('error', { message: 'An unexpected error occurred. Please try again.' });
   });
 
