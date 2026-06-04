@@ -5,7 +5,7 @@ const config: Config = {
   testEnvironment: 'node',
   roots: ['<rootDir>/test'],
   testMatch: ['**/*.test.ts'],
-  testTimeout: 60000,
+  testTimeout: 5000,
 };
 
 export default config;
