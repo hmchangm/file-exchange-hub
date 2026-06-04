@@ -9,4 +9,5 @@ export const pool = mysql.createPool({
   password: config.db.password,
   connectionLimit: 5,
   timezone: '+00:00',
+  supportBigNumbers: true,
 });

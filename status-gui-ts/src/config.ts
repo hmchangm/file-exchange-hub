@@ -14,7 +14,11 @@ const baseURL = process.env.OIDC_BASE_URL;
 export const config = {
   db: {
     host: required('DB_HOST'),
-    port: parseInt(process.env.DB_PORT ?? '3306', 10),
+    port: (() => {
+      const raw = parseInt(process.env.DB_PORT ?? '3306', 10);
+      if (isNaN(raw)) throw new Error('DB_PORT must be a valid integer');
+      return raw;
+    })(),
     database: required('DB_NAME'),
     user: required('DB_USER'),
     password: required('DB_PASS'),

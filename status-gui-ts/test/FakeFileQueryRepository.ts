@@ -38,8 +38,12 @@ export class FakeFileQueryRepository implements FileQueryRepository {
   findDeliveriesResult: DeliveryRow[] = [];
   findMissingResult: PagedResult = { rows: [], total: 0 };
 
-  async search(): Promise<PagedResult> { return this.searchResult; }
-  async findById(): Promise<FileRow | null> { return this.findByIdResult; }
-  async findDeliveries(): Promise<DeliveryRow[]> { return this.findDeliveriesResult; }
-  async findMissing(): Promise<PagedResult> { return this.findMissingResult; }
+  async search(_params: Parameters<FileQueryRepository['search']>[0]): Promise<PagedResult> {
+    return this.searchResult;
+  }
+  async findById(_id: string): Promise<FileRow | null> { return this.findByIdResult; }
+  async findDeliveries(_fileId: string): Promise<DeliveryRow[]> { return this.findDeliveriesResult; }
+  async findMissing(_params: Parameters<FileQueryRepository['findMissing']>[0]): Promise<PagedResult> {
+    return this.findMissingResult;
+  }
 }
