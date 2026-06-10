@@ -18,6 +18,7 @@
     <surefire-plugin.version>3.2.5</surefire-plugin.version>
     <testcontainers.version>1.19.7</testcontainers.version>
     <skipITs>true</skipITs>
+    <db>mariadb</db>
   </properties>
 
   <dependencyManagement>
@@ -44,11 +45,8 @@
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-kotlin</artifactId></dependency>
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-arc</artifactId></dependency>
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-rest-kotlin-serialization</artifactId></dependency>
-    <!-- DB -->
-    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-reactive-mysql-client</artifactId></dependency>
-    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-jdbc-mariadb</artifactId></dependency>
+    <!-- DB — vendor-specific client/jdbc/flyway deps live in the mariadb/oracle profiles -->
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-flyway</artifactId></dependency>
-    <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-mysql</artifactId></dependency>
     <!-- MinIO / S3 -->
     <dependency>
       <groupId>io.quarkiverse.amazonservices</groupId>
@@ -81,13 +79,27 @@
     <dependency><groupId>org.testcontainers</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
     <dependency><groupId>org.testcontainers</groupId><artifactId>minio</artifactId><scope>test</scope></dependency>
     <dependency><groupId>org.testcontainers</groupId><artifactId>mariadb</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>org.testcontainers</groupId><artifactId>oracle-free</artifactId><scope>test</scope></dependency>
     <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-test-common</artifactId><scope>test</scope></dependency>
   </dependencies>
 
   <build>
     <sourceDirectory>src/main/kotlin</sourceDirectory>
     <testSourceDirectory>src/test/kotlin</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <plugins>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <configuration>
+          <delimiters><delimiter>@</delimiter></delimiters>
+          <useDefaultDelimiters>false</useDefaultDelimiters>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
@@ -145,6 +157,7 @@
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
             <maven.home>${maven.home}</maven.home>
+            <db>${db}</db>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -159,6 +172,7 @@
                 <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                 <maven.home>${maven.home}</maven.home>
+                <db>${db}</db>
               </systemPropertyVariables>
             </configuration>
           </execution>
@@ -188,6 +202,36 @@
         <skipITs>false</skipITs>
         <quarkus.package.type>native</quarkus.package.type>
       </properties>
+    </profile>
+    <profile>
+      <id>mariadb</id>
+      <activation><property><name>db</name><value>!oracle</value></property></activation>
+      <properties>
+        <db.kind>mariadb</db.kind>
+        <db.jdbc.url>jdbc:mariadb://localhost:3306/filehub</db.jdbc.url>
+        <db.reactive.url>mariadb://localhost:3306/filehub</db.reactive.url>
+        <db.flyway.locations>db/migration/mariadb</db.flyway.locations>
+      </properties>
+      <dependencies>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-reactive-mysql-client</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-jdbc-mariadb</artifactId></dependency>
+        <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-mysql</artifactId></dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>oracle</id>
+      <activation><property><name>db</name><value>oracle</value></property></activation>
+      <properties>
+        <db.kind>oracle</db.kind>
+        <db.jdbc.url>jdbc:oracle:thin:@localhost:1521/FREEPDB1</db.jdbc.url>
+        <db.reactive.url>oracle:thin:@localhost:1521/FREEPDB1</db.reactive.url>
+        <db.flyway.locations>db/migration/oracle</db.flyway.locations>
+      </properties>
+      <dependencies>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-reactive-oracle-client</artifactId></dependency>
+        <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-jdbc-oracle</artifactId></dependency>
+        <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-oracle</artifactId></dependency>
+      </dependencies>
     </profile>
   </profiles>
 </project>
