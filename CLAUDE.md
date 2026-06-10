@@ -23,6 +23,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Run a single integration test class
 ./mvnw verify -DskipITs=false -Dit.test=FileResourceIT
 
+# Integration tests against Oracle instead of MariaDB
+./mvnw verify -DskipITs=false -Ddb=oracle
+
+# Build an Oracle-flavored artifact
+./mvnw package -Ddb=oracle
+
 # Lint check (also runs automatically during verify)
 ./mvnw ktlint:check
 
@@ -30,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./mvnw ktlint:format
 ```
 
-Integration tests require Docker (Testcontainers launches MariaDB, MinIO, and NATS).
+Integration tests require Docker (Testcontainers launches MariaDB (or Oracle with `-Ddb=oracle`), MinIO, and NATS).
 
 ## Architecture
 
@@ -63,6 +69,13 @@ Unit tests (`FileRegistrationServiceTest`) use hand-written fakes. Integration t
 ### Database
 
 Two tables: `file_metadata` and `file_delivery`. The project uses **two datasource connections**: a JDBC datasource (Flyway migrations only) and a reactive datasource (all runtime queries via `io.vertx.mutiny.sqlclient.Pool`).
+
+The project supports **two database vendors**, selected at build time: MariaDB (default)
+and Oracle 19c+ (`-Ddb=oracle`, which activates the `oracle` Maven profile). Repository
+SQL is portable ANSI (OFFSET/FETCH pagination, INSERT…SELECT…WHERE NOT EXISTS instead of
+INSERT IGNORE); only the Flyway DDL is vendor-specific (`db/migration/mariadb/` vs
+`db/migration/oracle/`). Datasource config is injected via Maven resource filtering
+(`@db.kind@` etc. in application.properties).
 
 Tags are stored as a JSON string in `file_metadata.tags` and deserialized at the resource layer with `kotlinx.serialization`.
 

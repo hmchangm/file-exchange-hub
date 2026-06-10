@@ -6,15 +6,17 @@ import io.restassured.module.kotlin.extensions.Extract
 import io.restassured.module.kotlin.extensions.Given
 import io.restassured.module.kotlin.extensions.Then
 import io.restassured.module.kotlin.extensions.When
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.CoreMatchers.notNullValue
-import org.junit.jupiter.api.Test
-import mlid.enghub.hub.MariaDbTestResource
+import mlid.enghub.hub.DatabaseTestResource
 import mlid.enghub.hub.MinioTestResource
 import mlid.enghub.hub.NatsTestResource
+import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.CoreMatchers.notNullValue
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Test
 
 @QuarkusTest
-@QuarkusTestResource(MariaDbTestResource::class)
+@QuarkusTestResource(DatabaseTestResource::class)
 @QuarkusTestResource(MinioTestResource::class)
 @QuarkusTestResource(NatsTestResource::class)
 class FileResourceIT {
@@ -125,5 +127,48 @@ class FileResourceIT {
             body("files", notNullValue())
             body("total", notNullValue())
         }
+    }
+
+    @Test
+    fun `search paginates registered files`() {
+        // Register two files with a distinct uploader so this test is isolated
+        listOf("search/one.pdf", "search/two.pdf").forEach { key ->
+            val body =
+                validBody
+                    .replace("test/sample.pdf", key)
+                    .replace("test-client", "search-client")
+            Given {
+                contentType("application/json")
+                body(body)
+            } When {
+                post("/api/files/register")
+            } Then {
+                statusCode(201)
+            }
+        }
+
+        val keyPage0 =
+            When {
+                get("/api/files?uploaderId=search-client&page=0&size=1")
+            } Then {
+                statusCode(200)
+                body("files.size()", equalTo(1))
+                body("total", equalTo(2))
+            } Extract {
+                path<String>("files[0].objectKey")
+            }
+
+        val keyPage1 =
+            When {
+                get("/api/files?uploaderId=search-client&page=1&size=1")
+            } Then {
+                statusCode(200)
+                body("files.size()", equalTo(1))
+            } Extract {
+                path<String>("files[0].objectKey")
+            }
+
+        assertNotEquals(keyPage0, keyPage1, "page 0 and page 1 must return different rows")
+        assertEquals(setOf("search/one.pdf", "search/two.pdf"), setOf(keyPage0, keyPage1))
     }
 }

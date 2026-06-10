@@ -5,8 +5,8 @@ import io.smallrye.reactive.messaging.MutinyEmitter
 import jakarta.enterprise.context.ApplicationScoped
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.eclipse.microprofile.reactive.messaging.Channel
 import mlid.enghub.hub.domain.FileRegisteredEvent
+import org.eclipse.microprofile.reactive.messaging.Channel
 
 interface FileRegistrationEventPublisher {
     suspend fun publish(event: FileRegisteredEvent): Boolean

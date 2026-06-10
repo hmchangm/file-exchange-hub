@@ -14,14 +14,24 @@ class FileDeliveryRepository(
     suspend fun insertIgnore(delivery: FileDelivery) {
         pool
             .preparedQuery(
-                "INSERT IGNORE INTO file_delivery (id, file_id, consumer_id, note, processed_at) VALUES (?, ?, ?, ?, ?)",
+                """
+                INSERT INTO file_delivery (id, file_id, consumer_id, note, processed_at)
+                SELECT ?, ?, ?, ?, ? FROM DUAL
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM file_delivery WHERE file_id = ? AND consumer_id = ?
+                )
+                """.trimIndent(),
             ).execute(
-                Tuple.of(
-                    delivery.id,
-                    delivery.fileId,
-                    delivery.consumerId,
-                    delivery.note,
-                    delivery.processedAt.atOffset(ZoneOffset.UTC).toLocalDateTime(),
+                Tuple.from(
+                    listOf(
+                        delivery.id,
+                        delivery.fileId,
+                        delivery.consumerId,
+                        delivery.note,
+                        delivery.processedAt.atOffset(ZoneOffset.UTC).toLocalDateTime(),
+                        delivery.fileId,
+                        delivery.consumerId,
+                    ),
                 ),
             ).map { Unit }
             .awaitSuspending()

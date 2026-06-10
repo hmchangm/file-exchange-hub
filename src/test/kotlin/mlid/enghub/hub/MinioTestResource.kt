@@ -37,14 +37,16 @@ class MinioTestResource : QuarkusTestResourceLifecycleManager {
 
         val tempFile = Files.createTempFile("sample", ".pdf")
         tempFile.toFile().writeText("sample pdf content")
-        s3Client.putObject(
-            PutObjectRequest
-                .builder()
-                .bucket("incoming")
-                .key("test/sample.pdf")
-                .build(),
-            tempFile,
-        )
+        listOf("test/sample.pdf", "search/one.pdf", "search/two.pdf").forEach { key ->
+            s3Client.putObject(
+                PutObjectRequest
+                    .builder()
+                    .bucket("incoming")
+                    .key(key)
+                    .build(),
+                tempFile,
+            )
+        }
         Files.delete(tempFile)
 
         return mapOf(
