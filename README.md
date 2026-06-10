@@ -188,7 +188,13 @@ Run unit and integration tests:
 ./mvnw verify -DskipITs=false
 ```
 
-Integration tests use Testcontainers for MariaDB, MinIO, and NATS.
+Run the integration tests against Oracle instead of MariaDB:
+
+```bash
+./mvnw verify -DskipITs=false -Ddb=oracle
+```
+
+Integration tests use Testcontainers for MariaDB (or Oracle with `-Ddb=oracle`), MinIO, and NATS.
 
 ### Linting
 
@@ -211,4 +217,7 @@ Flyway runs at application startup. The initial migration creates:
 - `file_metadata`
 - `file_delivery`
 
-Migration files live in `src/main/resources/db/migration/`.
+Two database vendors are supported, selected at build time: MariaDB (default) and
+Oracle 19c+ (`-Ddb=oracle`). Repository SQL is portable ANSI; only the Flyway DDL is
+vendor-specific. Migration files live in `src/main/resources/db/migration/mariadb/` and
+`src/main/resources/db/migration/oracle/`.
