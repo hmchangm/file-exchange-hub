@@ -85,8 +85,9 @@ class FileMetadataRepository(
         val rows =
             pool
                 .preparedQuery(
-                    "SELECT * FROM file_metadata WHERE $where ORDER BY registered_at DESC LIMIT ? OFFSET ?",
-                ).execute(Tuple.from(params + listOf(size, offset)))
+                    "SELECT * FROM file_metadata WHERE $where " +
+                        "ORDER BY registered_at DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY",
+                ).execute(Tuple.from(params + listOf(offset, size)))
                 .awaitSuspending()
         return rows.map { it.toFileMetadata() } to total
     }
@@ -126,8 +127,8 @@ class FileMetadataRepository(
         val total = countRows.first().getLong(0) ?: 0L
         val rows =
             pool
-                .preparedQuery("SELECT fm.* $baseSql ORDER BY fm.registered_at LIMIT ? OFFSET ?")
-                .execute(Tuple.from(params + listOf(size, offset)))
+                .preparedQuery("SELECT fm.* $baseSql ORDER BY fm.registered_at OFFSET ? ROWS FETCH NEXT ? ROWS ONLY")
+                .execute(Tuple.from(params + listOf(offset, size)))
                 .awaitSuspending()
         return rows.map { it.toFileMetadata() } to total
     }
