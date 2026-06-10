@@ -4,3 +4,4 @@ target/
 .quarkus/
 .vscode/
 .superpowers/
+dependency-reduced-pom.xml
