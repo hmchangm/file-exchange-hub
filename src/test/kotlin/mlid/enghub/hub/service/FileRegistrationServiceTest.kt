@@ -1,15 +1,15 @@
 package mlid.enghub.hub.service
 
 import kotlinx.coroutines.runBlocking
+import mlid.enghub.hub.domain.FileMetadata
+import mlid.enghub.hub.domain.FileRegisteredEvent
+import mlid.enghub.hub.repository.FileMetadataStore
+import mlid.enghub.hub.resource.dto.RegisterFileRequest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import mlid.enghub.hub.domain.FileMetadata
-import mlid.enghub.hub.domain.FileRegisteredEvent
-import mlid.enghub.hub.repository.FileMetadataStore
-import mlid.enghub.hub.resource.dto.RegisterFileRequest
 
 class FileRegistrationServiceTest {
     private val verifier = FakeObjectStoreVerifier()

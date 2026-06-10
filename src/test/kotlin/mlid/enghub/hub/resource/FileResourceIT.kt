@@ -11,6 +11,8 @@ import mlid.enghub.hub.MinioTestResource
 import mlid.enghub.hub.NatsTestResource
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.CoreMatchers.notNullValue
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
@@ -145,19 +147,28 @@ class FileResourceIT {
             }
         }
 
-        When {
-            get("/api/files?uploaderId=search-client&page=0&size=1")
-        } Then {
-            statusCode(200)
-            body("files.size()", equalTo(1))
-            body("total", equalTo(2))
-        }
+        val keyPage0 =
+            When {
+                get("/api/files?uploaderId=search-client&page=0&size=1")
+            } Then {
+                statusCode(200)
+                body("files.size()", equalTo(1))
+                body("total", equalTo(2))
+            } Extract {
+                path<String>("files[0].objectKey")
+            }
 
-        When {
-            get("/api/files?uploaderId=search-client&page=1&size=1")
-        } Then {
-            statusCode(200)
-            body("files.size()", equalTo(1))
-        }
+        val keyPage1 =
+            When {
+                get("/api/files?uploaderId=search-client&page=1&size=1")
+            } Then {
+                statusCode(200)
+                body("files.size()", equalTo(1))
+            } Extract {
+                path<String>("files[0].objectKey")
+            }
+
+        assertNotEquals(keyPage0, keyPage1, "page 0 and page 1 must return different rows")
+        assertEquals(setOf("search/one.pdf", "search/two.pdf"), setOf(keyPage0, keyPage1))
     }
 }
