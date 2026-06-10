@@ -6,7 +6,7 @@ import io.restassured.module.kotlin.extensions.Extract
 import io.restassured.module.kotlin.extensions.Given
 import io.restassured.module.kotlin.extensions.Then
 import io.restassured.module.kotlin.extensions.When
-import mlid.enghub.hub.MariaDbTestResource
+import mlid.enghub.hub.DatabaseTestResource
 import mlid.enghub.hub.MinioTestResource
 import mlid.enghub.hub.NatsTestResource
 import org.hamcrest.CoreMatchers.equalTo
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
-@QuarkusTestResource(MariaDbTestResource::class)
+@QuarkusTestResource(DatabaseTestResource::class)
 @QuarkusTestResource(MinioTestResource::class)
 @QuarkusTestResource(NatsTestResource::class)
 class FileResourceIT {
