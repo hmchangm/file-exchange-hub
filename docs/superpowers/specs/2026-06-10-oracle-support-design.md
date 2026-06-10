@@ -16,18 +16,18 @@ Support both MariaDB (current) and Oracle 19c as the backing database, selectabl
 
 ## Build & vendor selection
 
-Two Maven profiles:
+Two Maven profiles, switched by the `db` system property (`-Ddb=oracle`; absent = MariaDB). Property activation rather than `-P` so the default vendor survives `-Pnative` builds, and the same property reaches the forked test JVM to switch the Testcontainers image.
 
-- **`mariadb` (active by default):** current dependencies — `quarkus-reactive-mysql-client`, `quarkus-jdbc-mariadb`, `flyway-mysql`.
-- **`oracle` (`-Poracle`):** `quarkus-reactive-oracle-client`, `quarkus-jdbc-oracle`, plus the Flyway Oracle module (`flyway-database-oracle`) if the resolved Flyway version requires it for 19c — verify during implementation.
+- **`mariadb` (active when `db` ≠ `oracle`):** current dependencies — `quarkus-reactive-mysql-client`, `quarkus-jdbc-mariadb`, `flyway-mysql`.
+- **`oracle` (`-Ddb=oracle`):** `quarkus-reactive-oracle-client`, `quarkus-jdbc-oracle`, plus the Flyway Oracle module (`flyway-database-oracle`).
 
-Vendor-specific runtime config moves into Quarkus config profiles (`%mariadb.` / `%oracle.` prefixes) in `application.properties`:
+Vendor-specific config is injected into `application.properties` via Maven resource filtering with `@`-only delimiters (so Quarkus `${ENV:default}` placeholders survive). Quarkus `%profile.` config blocks are not used because integration tests always run under the `test` profile and would never see them. Filtered values:
 
 - `quarkus.datasource.db-kind`
 - JDBC and reactive URL defaults
 - `quarkus.flyway.locations`
 
-Each Maven profile sets `quarkus.profile` (`mariadb` or `oracle`) at build time. One artifact per vendor.
+One artifact per vendor.
 
 ## Repository SQL changes (portable rewrites)
 
@@ -76,7 +76,7 @@ Migrations move from `db/migration/` to vendor directories:
 
 - **Unit tests:** untouched (hand-written fakes, no DB).
 - **MariaDB ITs:** existing `FileResourceIT` + `MariaDbTestResource` stay the default path for `./mvnw verify -DskipITs=false`.
-- **Oracle ITs:** new `OracleTestResource` using Testcontainers `OracleContainer` with the `gvenzl/oracle-free` image (~1–2 min startup). Activated via `./mvnw verify -DskipITs=false -Ddb=oracle -Poracle`, running the same IT suite against Oracle. Not part of the default local/CI run.
+- **Oracle ITs:** `MariaDbTestResource` is replaced by a single `DatabaseTestResource` that starts either container based on the `db` system property; Oracle uses the `gvenzl/oracle-free` image (23ai — no free 19c image exists; the SQL is 19c-compatible by construction, ~1–2 min startup). Activated via `./mvnw verify -DskipITs=false -Ddb=oracle`, running the same IT suite against Oracle. Not part of the default local/CI run.
 - **Docs:** CLAUDE.md and README updated with the new build/test commands.
 
 ## Out of scope
